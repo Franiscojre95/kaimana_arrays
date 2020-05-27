@@ -23,7 +23,7 @@
 //  Created:  October 24, 2013    zonbipanda // gmail.com  -- Arduino 1.0.5 Support
 //  Revised:  October 29, 2013    zonbipanda // gmail.com
 //  Revised:  April   11, 2015    zonbipanda // gmail.com  -- Arduino 1.6.3 Support
-//  Revised:  May      6, 2020    tkheang -- Added separate brightness values for joystick, action buttons, and menu buttons in Kaimana.setLED() 
+//
 
 #define __PROG_TYPES_COMPAT__
 #include <avr/io.h>
@@ -31,7 +31,7 @@
 #include "Arduino.h"
 #include "kaimana.h"
 #include "kaimana_custom.h"
-#include "settings.h"
+
 
 Kaimana::Kaimana(void)
 {
@@ -59,83 +59,88 @@ Kaimana::Kaimana(void)
   pinMode( PIN_K1,     INPUT_PULLUP );
   pinMode( PIN_K2,     INPUT_PULLUP );
   pinMode( PIN_K3,     INPUT_PULLUP );
-  pinMode( PIN_K4,     INPUT_PULLUP );
+  pinMode( PIN_K4,     INPUT_PULLUP ); 
+
 
   // initialize Switch History
   switchHistoryClear();
 }
 
+const uint8_t PROGMEM gamma8[] = {
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,
+    1,  1,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  2,
+    2,  3,  3,  3,  3,  3,  3,  3,  4,  4,  4,  4,  4,  5,  5,  5,
+    5,  6,  6,  6,  6,  7,  7,  7,  7,  8,  8,  8,  9,  9,  9, 10,
+   10, 10, 11, 11, 11, 12, 12, 13, 13, 13, 14, 14, 15, 15, 16, 16,
+   17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 24, 24, 25,
+   25, 26, 27, 27, 28, 29, 29, 30, 31, 32, 32, 33, 34, 35, 35, 36,
+   37, 38, 39, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 50,
+   51, 52, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 66, 67, 68,
+   69, 70, 72, 73, 74, 75, 77, 78, 79, 81, 82, 83, 85, 86, 87, 89,
+   90, 92, 93, 95, 96, 98, 99,101,102,104,105,107,109,110,112,114,
+  115,117,119,120,122,124,126,127,129,131,133,135,137,138,140,142,
+  144,146,148,150,152,154,156,158,160,162,164,167,169,171,173,175,
+  177,180,182,184,186,189,191,193,196,198,200,203,205,208,210,213,
+  215,218,220,223,225,228,231,233,236,239,241,244,247,249,252,255 };
+
+void Kaimana::setLEDhtml(int index, long iRGB)
+{
+int hR = ( iRGB >> 16 ) & 0xFF;
+int hG = ( iRGB >> 8 ) & 0xFF;
+int hB = iRGB & 0xFF;
+
+setLED(index, hR, hG, hB);
+}
 
 void Kaimana::setLED(int index, int iR, int iG, int iB)
 {
-    // lowest brightness for joystick
-    if (index > 27 && index < 40) {
-      iR = iR * 0.12;
-      iG = iG * 0.12;
-      iB = iB * 0.12;
-    }
-    // highest brightness for attack buttons
-    else if (index >= 0 && index < 8) {
-      iR = iR;
-      iG = iG;
-      iB = iB;
-    }
-    // medium brightness for menu buttons
-    else {
-      iR = iR * 0.25;
-      iG = iG * 0.25;
-      iB = iB * 0.25;
-    }
+  // set led identified by index to the RGB color passed to this function
 
-  // light up single joystick LED or LED_L3_B
-  if(index >= 27 && index < 40)
-    {
-       _led[index].r = iR;
-       _led[index].g = iG;
-       _led[index].b = iB;
-    }
-    // light up both button LEDs for each Kaimana J2
-    else
-    {
-       _led[index].r = iR;
-       _led[index].g = iG;
-       _led[index].b = iB;
-       _led[index + 1].r = iR;
-       _led[index + 1].g = iG;
-       _led[index + 1].b = iB;
-     }
-}
 
-void Kaimana::setLEDBrightness(int index, int iR, int iG, int iB,float alpha)
-{
-  if (index > 27 && index < 40) {
-      iR = iR * (alpha / 2);
-      iG = iG * (alpha / 2);
-      iB = iB * (alpha / 2);
-  }
-  else {
-    	iR = iR * alpha;
-    	iG = iG * alpha;
-    	iB = iB * alpha;
-  }
-      
-  if(index > 27 && index < 40)
-    {
-     _led[index].r = iR;
-     _led[index].g = iG;
-     _led[index].b = iB;
-    }
-    else
-    {
+// gamma fix?	
+// _led[index].r = pgm_read_byte(&gamma8[iR*BRIGHTNESS]);
+// _led[index].g = pgm_read_byte(&gamma8[iG*BRIGHTNESS]);
+// _led[index].b = pgm_read_byte(&gamma8[iB*BRIGHTNESS]);
+
+
+// NO GAMMA FIX
+  // _led[index].r = iR*BRIGHTNESS;
+  // _led[index].g = iG*BRIGHTNESS;
+  // _led[index].b = iB*BRIGHTNESS;
   
-       _led[index].r = iR;
-       _led[index].g = iG;
-       _led[index].b = iB;
-       _led[index+ 1].r = iR;
-       _led[index+ 1].g = iG;
-       _led[index+ 1].b = iB;
-     }
-}  
+
+
+  if(index == LED_JOY)
+  {
+    index = 2;
+   //_led[index].r = iR*BRIGHTNESS;
+   //_led[index].g = iG*BRIGHTNESS;
+   //_led[index].b = iB*BRIGHTNESS;
+ _led[index].r = pgm_read_byte(&gamma8[(int) (iR*BRIGHTNESS)]);
+ _led[index].g = pgm_read_byte(&gamma8[(int) (iG*BRIGHTNESS)]);
+ _led[index].b = pgm_read_byte(&gamma8[(int) (iB*BRIGHTNESS)]);
+  }
+  else
+  {
+
+ _led[index].r = pgm_read_byte(&gamma8[(int) (iR*BRIGHTNESS)]);
+ _led[index].g = pgm_read_byte(&gamma8[(int) (iG*BRIGHTNESS)]);
+ _led[index].b = pgm_read_byte(&gamma8[(int) (iB*BRIGHTNESS)]);
+
+ _led[index+1].r = pgm_read_byte(&gamma8[(int) (iR*BRIGHTNESS)]);
+ _led[index+1].g = pgm_read_byte(&gamma8[(int) (iG*BRIGHTNESS)]);
+ _led[index+1].b = pgm_read_byte(&gamma8[(int) (iB*BRIGHTNESS)]);
+
+ //    _led[index].r = iR*BRIGHTNESS;
+ //    _led[index].g = iG*BRIGHTNESS;
+ //    _led[index].b = iB*BRIGHTNESS;
+ //    _led[index+ 1].r = iR*BRIGHTNESS;
+ //    _led[index+ 1].g = iG*BRIGHTNESS;
+ //    _led[index+ 1].b = iB*BRIGHTNESS;
+   }
+   
+}
 
 
 void Kaimana::setALL(int iR, int iG, int iB)
@@ -145,7 +150,7 @@ void Kaimana::setALL(int iR, int iG, int iB)
   // set all leds in the array to the RGB color passed to this function
   for(index=0;index<LED_COUNT;++index)
   {
-    setLEDBrightness( index, iR, iG, iB, 0.5);
+    setLED( index, iR, iG, iB );
   }
 
   // update the leds with new/current colors in the array
@@ -368,3 +373,8 @@ boolean Kaimana::switchHistoryTest( uint16_t a0, uint16_t a1, uint16_t a2,  uint
     
   return(result);
 }
+
+
+
+
+
